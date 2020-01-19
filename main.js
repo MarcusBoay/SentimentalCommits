@@ -1,22 +1,29 @@
 const express = require("express");
 const request = require("request");
 const cors = require("cors");
+const bodyParser = require("body-parser");
 // Imports the Google Cloud client library
 const language = require("@google-cloud/language");
 const app = express();
 const port = 5000;
 
 app.use(cors());
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+// parse application/json
+app.use(bodyParser.json());
 
-const options = {
-  url: "https://api.github.com/repos/MarcusBoay/maze-game/commits",
-  headers: {
-    "User-Agent": "Awesome-Octocat-App"
-  }
-};
-
-app.get("/analyse", (req, resp) => {
+app.post("/analyse", (req, resp) => {
   console.log("/analyse hit!");
+
+  let _url = req.body.url.split("/");
+
+  const options = {
+    url: "https://api.github.com/repos/" + _url[3] + "/" + _url[4] + "/commits",
+    headers: {
+      "User-Agent": "Awesome-Octocat-App"
+    }
+  };
 
   let _commits = [];
 
@@ -34,7 +41,6 @@ app.get("/analyse", (req, resp) => {
         message: ress[i].commit.message,
         date: ress[i].commit.committer.date
       });
-      console.log(ress[i]);
     }
 
     // Instantiates a client
