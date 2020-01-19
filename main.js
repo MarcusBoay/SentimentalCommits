@@ -1,9 +1,12 @@
 const express = require("express");
 const request = require("request");
+const cors = require("cors");
 // Imports the Google Cloud client library
 const language = require("@google-cloud/language");
 const app = express();
-const port = 3000;
+const port = 5000;
+
+app.use(cors());
 
 const options = {
   url: "https://api.github.com/repos/MarcusBoay/maze-game/commits",
@@ -12,7 +15,7 @@ const options = {
   }
 };
 
-app.get("/analyse", (req, res) => {
+app.get("/analyse", (req, resp) => {
   console.log("/analyse hit!");
 
   let _commits = [];
@@ -20,7 +23,18 @@ app.get("/analyse", (req, res) => {
   request(options, async (err, res, body) => {
     let ress = JSON.parse(body);
     for (let i = 0; i < ress.length; i++) {
-      _commits.push(ress[i].commit.message);
+      const profPic =
+        ress[i].committer != null && ress[i].committer.avatar_url != null
+          ? ress[i].committer.avatar_url
+          : null;
+
+      _commits.push({
+        committer: ress[i].commit.committer.name,
+        profPic: profPic,
+        message: ress[i].commit.message,
+        date: ress[i].commit.committer.date
+      });
+      console.log(ress[i]);
     }
 
     // Instantiates a client
@@ -29,7 +43,7 @@ app.get("/analyse", (req, res) => {
     var commits = [];
     for (let i = 0; i < _commits.length; i++) {
       // The text to analyze
-      const text = _commits[i];
+      const text = _commits[i].message;
       const document = {
         content: text,
         type: "PLAIN_TEXT"
@@ -38,18 +52,21 @@ app.get("/analyse", (req, res) => {
       // Detects the sentiment of the text
       const [result] = await client.analyzeSentiment({ document: document });
       const sentiment = result.documentSentiment;
-      console.log(`Text: ${text}`);
-      console.log(`Sentiment score: ${sentiment.score}`);
-      console.log(`Sentiment magnitude: ${sentiment.magnitude}`);
 
       commits.push({
+        profPic: _commits[i].profPic,
+        committer: _commits[i].committer,
         message: text,
-        sentimentScore: sentiment.score,
+        y: sentiment.score,
+        x: _commits[i].date,
         sentimentMagnitude: sentiment.magnitude
       });
     }
+
+    resp.json({
+      commits: commits
+    });
   });
-  //   res.send("Hello World!");
 });
 
 app.listen(port, () => {
