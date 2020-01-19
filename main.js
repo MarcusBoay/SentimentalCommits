@@ -47,7 +47,10 @@ app.post("/analyse", (req, resp) => {
     const client = new language.LanguageServiceClient();
 
     var commits = [];
-    for (let i = 0; i < _commits.length; i++) {
+
+    let j = 0;
+
+    for (let i = _commits.length - 1; i >= 0; i--) {
       // The text to analyze
       const text = _commits[i].message;
       const document = {
@@ -64,9 +67,11 @@ app.post("/analyse", (req, resp) => {
         committer: _commits[i].committer,
         message: text,
         y: sentiment.score,
-        x: _commits[i].date,
+        x: j,
         sentimentMagnitude: sentiment.magnitude
       });
+
+      j++;
     }
 
     resp.json({
